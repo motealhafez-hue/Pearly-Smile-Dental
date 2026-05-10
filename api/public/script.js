@@ -1319,6 +1319,11 @@ class LanguageManager {
     document.documentElement.lang = this.translations.htmlLang[lang];
     document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
     try {
+      document.body.setAttribute("lang", this.translations.htmlLang[lang]);
+    } catch (e) {
+      /* no-op */
+    }
+    try {
       let cl = document.querySelector('meta[http-equiv="content-language"]');
       if (!cl) {
         cl = document.createElement("meta");
@@ -1362,6 +1367,11 @@ class LanguageManager {
       }
       if (translation != null && translation !== "") {
         item.textContent = translation;
+        try {
+          item.setAttribute("lang", lang);
+        } catch (e) {
+          /* no-op */
+        }
       }
     });
   }
@@ -2164,6 +2174,12 @@ class BookingManager {
     if (!this.bookingMessage) return;
     this.bookingMessage.hidden = false;
     this.bookingMessage.textContent = text;
+    try {
+      const lng = typeof appState !== "undefined" ? appState.currentLang : "ar";
+      this.bookingMessage.setAttribute("lang", lng === "en" ? "en" : "ar");
+    } catch (e) {
+      /* no-op */
+    }
     this.bookingMessage.className = `booking-message ${type}`;
     setTimeout(() => {
       this.bookingMessage.hidden = true;

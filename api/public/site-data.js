@@ -46,7 +46,16 @@
   }
 
   function markCms(el) {
-    if (el) el.dataset.cmsBound = "1";
+    if (!el) return;
+    el.dataset.cmsBound = "1";
+    const l = currentLang();
+    if (l === "ar" || l === "en") {
+      try {
+        el.setAttribute("lang", l);
+      } catch (e) {
+        /* no-op */
+      }
+    }
   }
 
   /**
@@ -981,6 +990,11 @@
 
   function renderFooterBranches(footer, data, lang) {
     if (!footer) return;
+    try {
+      footer.setAttribute("lang", lang === "en" ? "en" : "ar");
+    } catch (eFootLang) {
+      /* no-op */
+    }
     var host = footer.querySelector("[data-cms-footer-branches]");
     if (!host) return;
     var metaHost = footer.querySelector("[data-cms-footer-meta]");

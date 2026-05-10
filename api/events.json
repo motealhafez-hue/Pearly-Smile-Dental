@@ -1,5 +1,65 @@
 [
   {
+    "id": "evt_-Ix0iYHB5EOUARRn",
+    "type": "page_view",
+    "timestamp": "2026-05-10T10:52:05.877Z",
+    "session_id": "sess_a4xav8y6x",
+    "page": "/index.html",
+    "patient_id": null,
+    "doctor": null,
+    "service": null,
+    "offer_id": null,
+    "booking_id": null
+  },
+  {
+    "id": "evt_VmZcmo4MXpwM8OUd",
+    "type": "page_visit",
+    "timestamp": "2026-05-10T10:52:04.559045+00:00",
+    "session_id": "adm_yyqvj37n3pf",
+    "page": "/admin",
+    "patient_id": null,
+    "doctor": null,
+    "service": "dashboard",
+    "offer_id": null,
+    "booking_id": null
+  },
+  {
+    "id": "evt_1nkVTaWoI00SU96B",
+    "type": "page_view",
+    "timestamp": "2026-05-10T10:29:54.977Z",
+    "session_id": "sess_a4xav8y6x",
+    "page": "/index.html",
+    "patient_id": null,
+    "doctor": null,
+    "service": null,
+    "offer_id": null,
+    "booking_id": null
+  },
+  {
+    "id": "evt_rosU17aBU6cU3Ndp",
+    "type": "page_view",
+    "timestamp": "2026-05-10T10:27:40.308Z",
+    "session_id": "sess_a4xav8y6x",
+    "page": "/index.html",
+    "patient_id": null,
+    "doctor": null,
+    "service": null,
+    "offer_id": null,
+    "booking_id": null
+  },
+  {
+    "id": "evt_qtl2QMmrJfdeCLlu",
+    "type": "page_visit",
+    "timestamp": "2026-05-10T10:27:36.989946+00:00",
+    "session_id": "adm_3zyw2lon6tx",
+    "page": "/admin",
+    "patient_id": null,
+    "doctor": null,
+    "service": "overview",
+    "offer_id": null,
+    "booking_id": null
+  },
+  {
     "id": "evt_2522VR11GgUWd-dg",
     "type": "booking_started",
     "timestamp": "2026-05-07T14:05:05.830Z",

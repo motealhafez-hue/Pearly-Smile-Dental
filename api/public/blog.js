@@ -834,6 +834,12 @@
       } else {
         contentEl.innerHTML = bodyHtml;
       }
+      try {
+        contentEl.setAttribute("dir", lang === "en" ? "ltr" : "rtl");
+        contentEl.setAttribute("lang", lang === "en" ? "en" : "ar");
+      } catch (eContentDir) {
+        /* no-op */
+      }
 
       if (relatedGrid) {
         const all = await fetchJson("/api/blog");

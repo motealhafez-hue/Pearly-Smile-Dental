@@ -25,6 +25,7 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Res
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.staticfiles import StaticFiles
+from starlette.types import Scope
 
 API_DIR = Path(__file__).resolve().parent
 
@@ -240,9 +241,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+class CacheControlStaticFiles(StaticFiles):
+    """
+    Static file server with sensible Cache-Control headers.
+    - Fingerprinted assets (`?v=...`) + images: long cache
+    - HTML: short cache (so content updates propagate)
+    """
+
+    def __init__(self, *args, default_html_cache: str = "public, max-age=60", **kwargs):
+        super().__init__(*args, **kwargs)
+        self._default_html_cache = default_html_cache
+
+    async def get_response(self, path: str, scope: Scope):  # type: ignore[override]
+        resp = await super().get_response(path, scope)
+        try:
+            if getattr(resp, "status_code", 200) != 200:
+                return resp
+            p = (path or "").lower()
+            is_html = p.endswith(".html") or p == "" or p.endswith("/")
+            if is_html:
+                resp.headers.setdefault("Cache-Control", self._default_html_cache)
+                return resp
+            # Static assets: cache hard (safe because we already use ?v= cache-busting)
+            if any(p.endswith(ext) for ext in (".css", ".js", ".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif", ".ico")):
+                resp.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
+                return resp
+            # Default for everything else (json/txt/xml)
+            resp.headers.setdefault("Cache-Control", "public, max-age=600")
+        except Exception:
+            pass
+        return resp
+
+
 # Serve uploaded media
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
+app.mount("/uploads", CacheControlStaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 _tokens: set[str] = set()
 security = HTTPBearer(auto_error=False)
@@ -2301,4 +2335,4 @@ def health():
     return {"status": "ok"}
 
 
-app.mount("/", StaticFiles(directory=str(ROOT_DIR), html=True), name="site")
+app.mount("/", CacheControlStaticFiles(directory=str(ROOT_DIR), html=True), name="site")
