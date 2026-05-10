@@ -185,7 +185,10 @@ BOOKINGS_PATH = API_DIR / "bookings.json"
 SCHEDULE_PATH = API_DIR / "schedule.json"
 EVENTS_PATH = API_DIR / "events.json"
 BLOG_PATH = API_DIR / "blog.json"
-UPLOADS_DIR = ROOT_DIR / "uploads"
+# Uploads must not live under ROOT_DIR (api/public) because sync-public wipes that folder.
+# In production, point UPLOADS_DIR to a persistent disk mount (Render Persistent Disk).
+_uploads_env = (os.environ.get("UPLOADS_DIR") or "").strip()
+UPLOADS_DIR = Path(_uploads_env).expanduser().resolve() if _uploads_env else (API_DIR / "uploads")
 
 # Load backend-only secrets from api/.env (never exposed to frontend)
 _env_log = logging.getLogger("pearly")
@@ -1065,11 +1068,23 @@ try:
     import multipart  # type: ignore  # noqa: F401
     from fastapi import UploadFile, File  # type: ignore
 
+    def _cloudinary_ready() -> bool:
+        """
+        Cloudinary is enabled if CLOUDINARY_URL is set, or if CLOUDINARY_CLOUD_NAME + key/secret exist.
+        Keeps local uploads as a fallback for local dev.
+        """
+        if (os.environ.get("CLOUDINARY_URL") or "").strip():
+            return True
+        if (os.environ.get("CLOUDINARY_CLOUD_NAME") or "").strip() and (os.environ.get("CLOUDINARY_API_KEY") or "").strip() and (os.environ.get("CLOUDINARY_API_SECRET") or "").strip():
+            return True
+        return False
+
     @app.post("/api/upload")
     async def upload_image(file: UploadFile = File(...), _: None = Depends(require_admin)):
         """
         Admin-only image upload.
-        Saves optimized images into /uploads and returns public URL.
+        Production: upload to Cloudinary (stable HTTPS URLs).
+        Fallback (no Cloudinary env): save optimized images into /uploads and return /uploads URL.
         """
         if not file or not file.filename:
             raise HTTPException(status_code=400, detail="Missing file")
@@ -1122,11 +1137,75 @@ try:
             optimized_bytes = None
 
         if optimized_bytes:
+            # If Cloudinary is configured, store there (persistent across deploys).
+            if _cloudinary_ready():
+                try:
+                    import cloudinary  # type: ignore
+                    import cloudinary.uploader  # type: ignore
+                    import cloudinary.api  # type: ignore
+
+                    # Config via env vars; do not hardcode secrets.
+                    cloudinary.config(
+                        cloud_name=(os.environ.get("CLOUDINARY_CLOUD_NAME") or "").strip() or None,
+                        api_key=(os.environ.get("CLOUDINARY_API_KEY") or "").strip() or None,
+                        api_secret=(os.environ.get("CLOUDINARY_API_SECRET") or "").strip() or None,
+                        secure=True,
+                    )
+                    # Upload bytes directly (no filesystem dependency).
+                    res = cloudinary.uploader.upload(
+                        optimized_bytes,
+                        folder=(os.environ.get("CLOUDINARY_FOLDER") or "psdc/uploads").strip(),
+                        public_id=out_name,
+                        resource_type="image",
+                        overwrite=False,
+                    )
+                    url = res.get("secure_url") or res.get("url")
+                    if not url:
+                        raise RuntimeError("cloudinary missing secure_url")
+                    payload: dict = {"ok": True, "url": str(url)}
+                    w = res.get("width")
+                    h = res.get("height")
+                    if isinstance(w, int) and isinstance(h, int):
+                        payload["width"] = w
+                        payload["height"] = h
+                    return payload
+                except Exception as e:
+                    log.warning("cloudinary upload failed; falling back to local uploads (%s)", e)
             out_path.write_bytes(optimized_bytes)
         else:
             # keep original extension if Pillow isn't available
             out_ext = ext
             out_path = UPLOADS_DIR / f"{out_name}.{out_ext}"
+            if _cloudinary_ready():
+                try:
+                    import cloudinary  # type: ignore
+                    import cloudinary.uploader  # type: ignore
+
+                    cloudinary.config(
+                        cloud_name=(os.environ.get("CLOUDINARY_CLOUD_NAME") or "").strip() or None,
+                        api_key=(os.environ.get("CLOUDINARY_API_KEY") or "").strip() or None,
+                        api_secret=(os.environ.get("CLOUDINARY_API_SECRET") or "").strip() or None,
+                        secure=True,
+                    )
+                    res = cloudinary.uploader.upload(
+                        raw,
+                        folder=(os.environ.get("CLOUDINARY_FOLDER") or "psdc/uploads").strip(),
+                        public_id=out_name,
+                        resource_type="image",
+                        overwrite=False,
+                    )
+                    url = res.get("secure_url") or res.get("url")
+                    if not url:
+                        raise RuntimeError("cloudinary missing secure_url")
+                    payload: dict = {"ok": True, "url": str(url)}
+                    w = res.get("width")
+                    h = res.get("height")
+                    if isinstance(w, int) and isinstance(h, int):
+                        payload["width"] = w
+                        payload["height"] = h
+                    return payload
+                except Exception as e:
+                    log.warning("cloudinary upload failed; falling back to local uploads (%s)", e)
             out_path.write_bytes(raw)
 
         log.info("upload: saved=%s", str(out_path))
