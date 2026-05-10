@@ -89,8 +89,9 @@
   var isAdmin = root.classList && root.classList.contains("admin-root");
 
   if (isAdmin) {
-    root.lang = lang === "ar" ? "ar" : "en";
-    root.dir = lang === "ar" ? "rtl" : "ltr";
+    // Admin dashboard layout is designed for LTR; don't flip UI when public site language is Arabic.
+    root.lang = "en";
+    root.dir = "ltr";
     root.classList.toggle("theme-dark", theme === "dark");
     root.classList.toggle("theme-light", theme !== "dark");
   } else {
