@@ -47,7 +47,7 @@ const CONFIG = {
   };
 })();
 
-/** JSON/API host: `window.__API_BASE__` if set; else file/localhost → `http://127.0.0.1:8000`. */
+/** API origin: explicit `window.__API_BASE__`, else `location.origin` (HTTPS-safe). For file:// use localStorage `ps_api_base`. */
 function psResolveApiBase() {
   try {
     if (
@@ -58,14 +58,18 @@ function psResolveApiBase() {
     ) {
       return String(window.__API_BASE__).replace(/\/$/, "");
     }
-    if (location.protocol === "file:") return "http://127.0.0.1:8000";
-    const h = String(location.hostname || "").toLowerCase();
-    if (h === "127.0.0.1" || h === "localhost" || h === "[::1]") {
-      return "http://127.0.0.1:8000";
+    if (location.protocol === "file:") {
+      try {
+        const ls = String(localStorage.getItem("ps_api_base") || "").trim();
+        if (ls) return ls.replace(/\/$/, "");
+      } catch (eLs) {
+        /* no-op */
+      }
+      return "";
     }
     return String(location.origin || "").replace(/\/$/, "");
   } catch (e) {
-    return "http://127.0.0.1:8000";
+    return "";
   }
 }
 
@@ -1269,13 +1273,11 @@ function preserveViewportDuring(fn) {
   try {
     fn();
   } finally {
-    /* Immediate restore: some engines reset scroll after dir/class changes before the next paint. */
-    restore();
+    /* One rAF + one delayed restore reduces forced reflow vs many synchronous scrollTo calls. */
     requestAnimationFrame(() => {
       restore();
+      window.setTimeout(restore, 80);
     });
-    window.setTimeout(restore, 0);
-    window.setTimeout(restore, 100);
   }
 }
 
@@ -2563,7 +2565,7 @@ const HomeBlogTeaser = (function () {
     try {
       return psResolveApiBase();
     } catch (e) {
-      return "http://127.0.0.1:8000";
+      return "";
     }
   }
 

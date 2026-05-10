@@ -2230,14 +2230,18 @@
 
         const apiBase = (function () {
           try {
-            if (location.protocol === "file:") return "http://127.0.0.1:8000";
-            var h = String(location.hostname || "").toLowerCase();
-            if (h === "127.0.0.1" || h === "localhost" || h === "[::1]") {
-              return "http://127.0.0.1:8000";
+            if (location.protocol === "file:") {
+              try {
+                var ls = String(localStorage.getItem("ps_api_base") || "").trim();
+                if (ls) return ls.replace(/\/$/, "");
+              } catch (e0) {
+                /* no-op */
+              }
+              return "";
             }
-            return location.origin;
+            return String(location.origin || "").replace(/\/$/, "");
           } catch (e) {
-            return "http://127.0.0.1:8000";
+            return "";
           }
         })();
 

@@ -76,14 +76,10 @@
       } catch (eLs) {
         /* no-op */
       }
-      if (location.protocol === "file:") return "http://127.0.0.1:8000";
-      var host = String(location.hostname || "").toLowerCase();
-      if (host === "127.0.0.1" || host === "localhost" || host === "[::1]") {
-        return "http://127.0.0.1:8000";
-      }
-      return String(location.origin).replace(/\/$/, "");
+      if (location.protocol === "file:") return "";
+      return String(location.origin || "").replace(/\/$/, "");
     } catch (e) {
-      return "http://127.0.0.1:8000";
+      return "";
     }
   }
 
@@ -355,24 +351,6 @@
     return r.json();
   }
 
-  // #region agent log
-  function _dbgBlogPad(message, hypothesisId, data) {
-    fetch("http://127.0.0.1:7564/ingest/b2698cbe-56cc-4593-963c-a04c198ebff3", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "efd322" },
-      body: JSON.stringify({
-        sessionId: "efd322",
-        runId: "navpad-pre",
-        hypothesisId: hypothesisId,
-        location: "blog.js:_dbgBlogPad",
-        message: message,
-        data: data || {},
-        timestamp: Date.now(),
-      }),
-    }).catch(function () {});
-  }
-  // #endregion
-
   function initBlogNavbarBehavior() {
     const page = currentPageType();
     if (page !== "blog" && page !== "blog_post") return;
@@ -409,17 +387,11 @@
   function syncBlogPostMainUnderNav() {
     const pt = currentPageType();
     if (pt !== "blog_post") {
-      // #region agent log
-      _dbgBlogPad("syncBlogPostMainUnderNav skip: pageType", "H1", { pageType: pt, dsPage: document.documentElement && document.documentElement.getAttribute("data-page") });
-      // #endregion
       return;
     }
     const main = document.getElementById("blogPostMain");
     const header = document.querySelector("header.mobile-nav");
     if (!main || !header) {
-      // #region agent log
-      _dbgBlogPad("syncBlogPostMainUnderNav skip: missing el", "H2", { hasMain: !!main, hasHeader: !!header });
-      // #endregion
       return;
     }
     const b = header.getBoundingClientRect();
@@ -431,16 +403,6 @@
     } catch (e) {
       cs = "err";
     }
-    // #region agent log
-    _dbgBlogPad("syncBlogPostMainUnderNav applied", "H3_H4", {
-      headerTop: Math.round(b.top * 10) / 10,
-      headerBottom: Math.round(b.bottom * 10) / 10,
-      headerH: Math.round(b.height * 10) / 10,
-      padPx: pad,
-      computedPaddingTop: cs,
-      scrollY: typeof window.scrollY === "number" ? window.scrollY : 0,
-    });
-    // #endregion
 
     /* After layout: bump padding if article (or title) still starts above the fixed header bottom */
     var titleEl = document.getElementById("blog-title");
@@ -468,19 +430,8 @@
           if (isNaN(cur)) cur = basePad;
           var nextPad = cur + bump + 8;
           mainEl.style.paddingTop = nextPad + "px";
-          // #region agent log
-          _dbgBlogPad("syncBlogPostMainUnderNav overlapFix", "H6", {
-            bump: bump,
-            nextPadPx: nextPad,
-            articleTop: art ? Math.round(art.getBoundingClientRect().top * 10) / 10 : null,
-            titleTop: titleEl ? Math.round(titleEl.getBoundingClientRect().top * 10) / 10 : null,
-            headerBottom: Math.round(hR.bottom * 10) / 10,
-          });
-          // #endregion
         } catch (e2) {
-          // #region agent log
-          _dbgBlogPad("syncBlogPostMainUnderNav overlapFix err", "H6", { err: String(e2 && e2.message ? e2.message : e2) });
-          // #endregion
+          /* no-op */
         }
       });
     });
@@ -488,9 +439,6 @@
 
   function scheduleBlogPostMainPadSync() {
     if (currentPageType() !== "blog_post") return;
-    // #region agent log
-    _dbgBlogPad("scheduleBlogPostMainPadSync", "H5", { readyState: document.readyState });
-    // #endregion
     requestAnimationFrame(function () {
       syncBlogPostMainUnderNav();
     });
@@ -906,9 +854,6 @@
       contentEl.innerHTML =
         '<div class="empty-hint">' + escapeHtml(tr("blogNotFound") || "Article not found.") + "</div>";
     } finally {
-      // #region agent log
-      _dbgBlogPad("renderArticle finally", "H5", { slug: String(extractBlogSlug() || "").trim() });
-      // #endregion
       scheduleBlogPostMainPadSync();
     }
   }
@@ -931,23 +876,12 @@
     },
     /** Called from App.init after i18n — nav text reflows; re-measure #blogPostMain padding */
     resyncArticleMainPad: function () {
-      // #region agent log
-      _dbgBlogPad("Blog.resyncArticleMainPad", "H7", { page: currentPageType() });
-      // #endregion
       scheduleBlogPostMainPadSync();
     },
   };
 
   // Init
   const page = currentPageType();
-  // #region agent log
-  _dbgBlogPad("blog.js init", "H1_H5", {
-    page,
-    dataPageAttr: document.documentElement && document.documentElement.getAttribute("data-page"),
-    readyState: document.readyState,
-    path: typeof location !== "undefined" ? location.pathname : "",
-  });
-  // #endregion
   initBlogNavbarBehavior();
   if (page === "blog_post") {
     scheduleBlogPostMainPadSync();

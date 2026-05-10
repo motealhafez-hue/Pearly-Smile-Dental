@@ -21,11 +21,21 @@
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="canonical" href="index.html" />
     <title>Pearly Smile Dental Center | مركز بيرلي سمايل لطب الأسنان</title>
-    <!-- LCP: must match :root --ps-hero-slide-a in style.css (update both if URL changes) -->
+    <!-- LCP hero: keep in sync — mobile @media in style.css (--ps-hero-slide-a/b/c w=1200) + desktop :root (w=1920) + preloads below -->
+    <link rel="dns-prefetch" href="https://images.unsplash.com" />
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
     <link
       rel="preload"
       as="image"
       fetchpriority="high"
+      media="(max-width: 768px)"
+      href="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&amp;fit=crop&amp;w=1200&amp;q=78"
+    />
+    <link
+      rel="preload"
+      as="image"
+      fetchpriority="high"
+      media="(min-width: 769px)"
       href="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&amp;fit=crop&amp;w=1920&amp;q=78"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -66,7 +76,7 @@
         href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap"
       />
     </noscript>
-    <link rel="stylesheet" href="style.css?v=i18n-dir-v1" />
+    <link rel="stylesheet" href="style.min.css?v=perf-sec-v1" />
     <script>
       (function () {
         try {
@@ -613,26 +623,9 @@
         ]
       }
     </script>
-    <script>
-      try {
-        window.__API_BASE__ =
-          typeof window.__API_BASE__ !== "undefined"
-            ? window.__API_BASE__
-            : (function () {
-                var p = location.protocol;
-                var h = String(location.hostname || "").toLowerCase();
-                if (p === "file:" || h === "127.0.0.1" || h === "localhost" || h === "[::1]") {
-                  return "http://127.0.0.1:8000";
-                }
-                return location.origin;
-              })();
-      } catch (e) {
-        window.__API_BASE__ = "http://127.0.0.1:8000";
-      }
-    </script>
     <script defer src="site-prefs-boot.js"></script>
-    <script defer src="site-data.js?v=i18n-dir-v1"></script>
-    <script defer src="script.js?v=i18n-dir-v1"></script>
+    <script defer src="site-data.min.js?v=perf-sec-v1"></script>
+    <script defer src="script.min.js?v=perf-sec-v1"></script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",

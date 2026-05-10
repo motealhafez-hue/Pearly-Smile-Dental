@@ -1,7 +1,8 @@
 """
 Pearly Smile CMS API — serves site static files and JSON-backed content.
-Run from repo HTML folder:  uvicorn api.main:app --reload --host 127.0.0.1 --port 8000
-Or from api folder:         uvicorn main:app --reload --host 127.0.0.1 --port 8000
+
+Local dev (monorepo): from repo root, `py -3 -m uvicorn api.main:app --reload --port 8000`
+(or use `start-api.ps1`). Set `SITE_BASE_URL` in production (e.g. https://your-domain.com).
 
 Windows (ZKBioTime / PYTHONHOME): use repo `start-api.ps1` or `start-api.bat` so your
 `pythoncore-*` install runs, not the biometric software Python.
@@ -24,6 +25,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, ConfigDict, Field
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import RedirectResponse
 from starlette.staticfiles import StaticFiles
 from starlette.types import Scope
 
@@ -208,9 +212,69 @@ elif not (os.environ.get("OPENAI_API_KEY") or "").strip():
 
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "pearly-admin")
-SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+# Absolute URLs for sitemaps / JSON-LD. Required in production; empty → relative paths only.
+SITE_BASE_URL = (
+    (os.environ.get("SITE_BASE_URL") or os.environ.get("PUBLIC_SITE_URL") or "").strip().rstrip("/")
+)
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
 AUTO_TRANSLATE = os.environ.get("AUTO_TRANSLATE", "1").strip() not in ("0", "false", "False", "no", "NO")
+
+
+def _truthy_env(name: str) -> bool:
+    return (os.environ.get(name) or "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _cors_allow_origins() -> tuple[list[str], bool]:
+    raw = (os.environ.get("CORS_ALLOW_ORIGINS") or "").strip()
+    if raw == "*":
+        return ["*"], False
+    if not raw:
+        return [], False
+    origins = [x.strip() for x in raw.split(",") if x.strip()]
+    return origins, True
+
+
+class ForceHTTPSMiddleware(BaseHTTPMiddleware):
+    """307 redirect to HTTPS when behind a proxy (X-Forwarded-Proto) or direct HTTP. Enable with FORCE_HTTPS=1."""
+
+    async def dispatch(self, request: Request, call_next):
+        if not _truthy_env("FORCE_HTTPS"):
+            return await call_next(request)
+        proto = (request.headers.get("x-forwarded-proto") or request.url.scheme or "").lower()
+        if proto != "http":
+            return await call_next(request)
+        host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+        if not host:
+            return await call_next(request)
+        path = request.url.path or "/"
+        dest = f"https://{host}{path}"
+        q = request.url.query
+        if q:
+            dest = f"{dest}?{q}"
+        return RedirectResponse(dest, status_code=307)
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """HSTS (on HTTPS responses), CSP, COOP, frame protection, nosniff, Referrer-Policy."""
+
+    def __init__(self, app, csp: str):
+        super().__init__(app)
+        self._csp = (csp or "").strip()
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        h = response.headers
+        h.setdefault("X-Content-Type-Options", "nosniff")
+        h.setdefault("X-Frame-Options", "DENY")
+        h.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        h.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        h.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        if self._csp:
+            h.setdefault("Content-Security-Policy", self._csp)
+        proto = (request.headers.get("x-forwarded-proto") or request.url.scheme or "").lower()
+        if proto == "https" and not _truthy_env("DISABLE_HSTS"):
+            h.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        return response
 
 
 def _blog_ai_target_word_count() -> int:
@@ -233,13 +297,35 @@ log.info(
     "ok" if (ROOT_DIR / "index.html").is_file() else "missing — push HTML to GitHub or set SITE_ROOT",
 )
 
+_cors_origins, _cors_credentials = _cors_allow_origins()
+if not SITE_BASE_URL and _truthy_env("FORCE_HTTPS"):
+    log.warning("SITE_BASE_URL is unset — set it in production for absolute sitemap/JSON-LD URLs.")
+
+_default_csp = (
+    "default-src 'self'; "
+    "base-uri 'self'; "
+    "object-src 'none'; "
+    "frame-ancestors 'none'; "
+    "img-src 'self' data: blob: https:; "
+    "font-src 'self' https://fonts.gstatic.com data:; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "connect-src 'self'; "
+    "form-action 'self'; "
+    "upgrade-insecure-requests"
+)
+_csp_value = (os.environ.get("CONTENT_SECURITY_POLICY") or _default_csp).strip()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    allow_credentials=_cors_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SecurityHeadersMiddleware, csp=_csp_value)
+if _truthy_env("FORCE_HTTPS"):
+    app.add_middleware(ForceHTTPSMiddleware)
 
 
 class CacheControlStaticFiles(StaticFiles):
@@ -464,14 +550,14 @@ def _pick_lang(val: object, lang: str = "en") -> str:
 
 
 def _public_url(path: str) -> str:
-    # Ensure absolute URL for sitemap + AI index.
+    # Absolute URL when SITE_BASE_URL is set; otherwise same-origin relative (valid for many crawlers if canonical elsewhere).
     if not path:
-        return SITE_BASE_URL + "/"
+        return (SITE_BASE_URL + "/") if SITE_BASE_URL else "/"
     if path.startswith("http://") or path.startswith("https://"):
         return path
     if not path.startswith("/"):
         path = "/" + path
-    return SITE_BASE_URL + path
+    return (SITE_BASE_URL + path) if SITE_BASE_URL else path
 
 
 class GenerateBlogRequest(BaseModel):

@@ -1,6 +1,6 @@
 /**
  * Loads CMS JSON from the API and hydrates the DOM without changing layout/CSS hooks.
- * Expects window.__API_BASE__ (e.g. uvicorn). If unset: production uses location.origin; localhost/file uses :8000.
+ * Uses window.__API_BASE__ if set; else location.origin. For file://, optional localStorage ps_api_base.
  */
 (function (global) {
   "use strict";
@@ -11,15 +11,19 @@
     let base = raw.replace(/\/$/, "");
     if (!base && global.location) {
       try {
-        const h = String(global.location.hostname || "").toLowerCase();
         const p = String(global.location.protocol || "");
-        if (p === "file:" || h === "127.0.0.1" || h === "localhost" || h === "[::1]") {
-          base = "http://127.0.0.1:8000";
+        if (p === "file:") {
+          try {
+            const ls = String(global.localStorage.getItem("ps_api_base") || "").trim();
+            base = ls.replace(/\/$/, "");
+          } catch (eLs) {
+            base = "";
+          }
         } else {
           base = String(global.location.origin || "").replace(/\/$/, "");
         }
       } catch (e0) {
-        base = "http://127.0.0.1:8000";
+        base = "";
       }
     }
     return base || null;

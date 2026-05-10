@@ -168,24 +168,21 @@
     /* no-op */
   }
 
-  /* CMS / FastAPI base: local dev always talks to uvicorn :8000 (see start-api.bat). */
+  /* Optional API base for file:// or split-origin deploys: set localStorage ps_api_base or window.__API_BASE__ in HTML. */
   try {
     var locApi = window.location || {};
     var protoApi = String(locApi.protocol || "");
-    var hostApi = String(locApi.hostname || "").toLowerCase();
     var already =
       typeof window.__API_BASE__ !== "undefined" &&
       window.__API_BASE__ !== "" &&
       window.__API_BASE__ !== null &&
       window.__API_BASE__ !== false;
-    if (!already) {
-      if (
-        protoApi === "file:" ||
-        hostApi === "127.0.0.1" ||
-        hostApi === "localhost" ||
-        hostApi === "[::1]"
-      ) {
-        window.__API_BASE__ = "http://127.0.0.1:8000";
+    if (!already && protoApi === "file:") {
+      try {
+        var lsApi = String(window.localStorage.getItem("ps_api_base") || "").trim();
+        if (lsApi) window.__API_BASE__ = lsApi.replace(/\/$/, "");
+      } catch (eLs2) {
+        /* no-op */
       }
     }
   } catch (eApiBase) {

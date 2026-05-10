@@ -98,7 +98,7 @@
       }
     ],
     "visual": {
-      "image": "http://127.0.0.1:8000/uploads/img_8646ee7ba9366207c683.jpg",
+      "image": "/uploads/img_8646ee7ba9366207c683.jpg",
       "kicker": {
         "ar": "منذ 2004",
         "en": "Since 2004"
@@ -168,7 +168,7 @@
         "ar": "متابعة شاملة لصحة الفم والأسنان مع خطة علاج واضحة ونصائح يومية بسيطة للحفاظ على الابتسامة.",
         "en": "Comprehensive follow-up with a clear plan and simple daily guidance to maintain a healthy smile."
       },
-      "image": "http://127.0.0.1:8000/uploads/img_b6da690b3126d89e93fc.webp"
+      "image": "/uploads/img_b6da690b3126d89e93fc.webp"
     },
     {
       "id": "xray",
@@ -186,7 +186,7 @@
         "ar": "تصوير رقمي سريع يساعد على تشخيص أدق وخطة علاج آمنة، مع تقارير واضحة ومتابعة أفضل للحالة.",
         "en": "Fast digital imaging for more accurate diagnosis, safer planning, and clearer follow-up."
       },
-      "image": "http://127.0.0.1:8000/uploads/img_ee435a4be20ff9c0b66b.webp"
+      "image": "/uploads/img_ee435a4be20ff9c0b66b.webp"
     },
     {
       "id": "restorations",
@@ -204,7 +204,7 @@
         "ar": "حلول ترميمية بمواد عالية الجودة لتقوية السن وتحسين الشكل والوظيفة مع نتائج طبيعية ومريحة.",
         "en": "High-quality restorative options to strengthen the tooth and improve look and function with natural results."
       },
-      "image": "http://127.0.0.1:8000/uploads/img_97eda5bdbaa543308477.webp"
+      "image": "/uploads/img_97eda5bdbaa543308477.webp"
     },
     {
       "id": "gums",
@@ -222,7 +222,7 @@
         "ar": "علاج التهاب اللثة وتنظيف عميق للجذور لتحسين الصحة وتقليل النزيف والرائحة، مع خطة وقائية طويلة المدى.",
         "en": "Gum inflammation care and deep cleaning to improve health and reduce bleeding/odor, with a long-term prevention plan."
       },
-      "image": "http://127.0.0.1:8000/uploads/img_73c35d52c687d0f22628.webp",
+      "image": "/uploads/img_73c35d52c687d0f22628.webp",
       "image_focal_x": 54.15,
       "image_focal_y": 49.75
     },
@@ -242,7 +242,7 @@
         "ar": "تقييم دقيق وخطة زراعة مناسبة لحالتك لاستعادة الابتسامة والمضغ بثبات، مع متابعة لضمان أفضل نتيجة.",
         "en": "A precise assessment and tailored implant plan to restore your smile and bite with confident follow-up."
       },
-      "image": "http://127.0.0.1:8000/uploads/img_c3c669717cf804f530b3.webp"
+      "image": "/uploads/img_c3c669717cf804f530b3.webp"
     },
     {
       "id": "oral-surgery",
@@ -260,7 +260,7 @@
         "ar": "إجراءات جراحية دقيقة مع تخطيط مسبق وتعليمات واضحة قبل وبعد، لتجربة آمنة وتقليل الانزعاج.",
         "en": "Carefully planned procedures with clear before/after guidance for a safer, more comfortable experience."
       },
-      "image": "http://127.0.0.1:8000/uploads/img_9e2ad361383c6bf81962.webp"
+      "image": "/uploads/img_9e2ad361383c6bf81962.webp"
     },
     {
       "id": "pediatric",
@@ -278,7 +278,7 @@
         "ar": "بيئة ودودة وخطوات علاج بسيطة تساعد الطفل على الشعور بالأمان، مع إرشادات للأهل للعناية اليومية.",
         "en": "A friendly environment and simple steps to help kids feel safe—plus guidance for parents at home."
       },
-      "image": "http://127.0.0.1:8000/uploads/img_a0afec4740c7ca88cf05.webp"
+      "image": "/uploads/img_a0afec4740c7ca88cf05.webp"
     },
     {
       "id": "endodontics",
@@ -296,7 +296,7 @@
         "ar": "علاج جذور يركز على تقليل الألم وحفظ السن، مع خطوات دقيقة وشرح واضح لما تحتاجه قبل وبعد الجلسة.",
         "en": "Root canal care focused on pain relief and tooth preservation, with clear guidance before and after."
       },
-      "image": "http://127.0.0.1:8000/uploads/img_99c5d8680f29a78e4be6.webp"
+      "image": "/uploads/img_99c5d8680f29a78e4be6.webp"
     }
   ],
   "homeFeaturedServiceIds": [
@@ -537,7 +537,7 @@
     "facebook": "https://www.facebook.com/psdc.org"
   },
   "navbar": {
-    "logo": "http://127.0.0.1:8000/uploads/img_3a6d59d22a1035fc3eb0.png"
+    "logo": "/uploads/img_3a6d59d22a1035fc3eb0.png"
   },
   "footerMeta": {
     "email": "",

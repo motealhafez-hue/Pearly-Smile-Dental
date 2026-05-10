@@ -21,6 +21,7 @@ if (Test-Path $Pub) {
 }
 New-Item -ItemType Directory -Path $Pub | Out-Null
 
+# Root-level *.css / *.js includes minified bundles (e.g. style.min.css, script.min.js).
 Get-ChildItem -Path $SiteRoot -File | ForEach-Object {
     $ext = $_.Extension.ToLowerInvariant()
     if ($ext -in @(".html", ".css", ".js", ".txt", ".xml")) {
