@@ -168,8 +168,19 @@ const Analytics = (function () {
   }
 
   function init() {
-    // Page load
-    trackEvent("page_view");
+    // Page load — defer to idle so /api/events does not compete with LCP / /api/data
+    const firePageView = () => {
+      try {
+        trackEvent("page_view");
+      } catch (e) {
+        /* no-op */
+      }
+    };
+    if (typeof requestIdleCallback === "function") {
+      requestIdleCallback(firePageView, { timeout: 3500 });
+    } else {
+      window.setTimeout(firePageView, 1);
+    }
 
     // Delegated click tracking for doctors and services (covers index/team/services pages)
     document.addEventListener(
@@ -1262,16 +1273,9 @@ function preserveViewportDuring(fn) {
     restore();
     requestAnimationFrame(() => {
       restore();
-      requestAnimationFrame(() => {
-        restore();
-        requestAnimationFrame(restore);
-      });
     });
-    /* Catch late layout: blog nav padding sync, async booking selects, fonts, ResizeObserver, etc. */
     window.setTimeout(restore, 0);
-    window.setTimeout(restore, 48);
-    window.setTimeout(restore, 160);
-    window.setTimeout(restore, 320);
+    window.setTimeout(restore, 100);
   }
 }
 
@@ -1681,15 +1685,52 @@ class BookingManager {
     this._bookingStartedTracked = false;
     this._schedulePollId = null;
     this._scheduleChannel = null;
+    this._initialPopulateStarted = false;
     PremiumSelect.mount(this.doctorSelect, { searchable: true });
     PremiumSelect.mount(this.branchSelect, { searchable: false });
     PremiumSelect.mount(this.timeSelect, { searchable: true });
     this.attachListeners();
     this.bindScheduleRefresh();
-    void this.populateAll(this.appLang());
+    this.scheduleInitialPopulate();
     document.addEventListener('cms-data-applied', () => {
       this.syncDoctorPreviewPanel();
     });
+  }
+
+  /** Load branches/doctors after idle or when booking section is near viewport (not on LCP critical path). */
+  static scheduleInitialPopulate() {
+    if (this._initialPopulateStarted) return;
+    const run = () => {
+      if (this._initialPopulateStarted) return;
+      this._initialPopulateStarted = true;
+      void this.populateAll(this.appLang());
+    };
+    const target =
+      document.getElementById('booking') ||
+      document.querySelector('.booking-section') ||
+      document.querySelector('#cms-home-about');
+    const idleRun = () => {
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(run, { timeout: 4500 });
+      } else {
+        window.setTimeout(run, 400);
+      }
+    };
+    if (target && typeof IntersectionObserver !== 'undefined') {
+      const io = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.isIntersecting)) {
+            io.disconnect();
+            run();
+          }
+        },
+        { root: null, rootMargin: '220px', threshold: 0.01 }
+      );
+      io.observe(target);
+      idleRun();
+    } else {
+      idleRun();
+    }
   }
 
   static bindScheduleRefresh() {
@@ -2723,10 +2764,33 @@ const HomeBlogTeaser = (function () {
     const host = document.getElementById("cms-home-blog");
     if (!host) return;
     host.innerHTML = '<p class="empty-hint">' + escapeHtml(tr("homeBlogLoading")) + "</p>";
-    loadPosts().then(function (posts) {
-      var el = document.getElementById("cms-home-blog");
-      if (el) paint(el, posts);
-    });
+    var loadStarted = false;
+    var startLoad = function () {
+      if (loadStarted) return;
+      loadStarted = true;
+      loadPosts().then(function (posts) {
+        var el = document.getElementById("cms-home-blog");
+        if (el) paint(el, posts);
+      });
+    };
+    var section = host.closest("section") || host;
+    if (section && typeof IntersectionObserver !== "undefined") {
+      var io = new IntersectionObserver(
+        function (entries) {
+          if (entries.some(function (e) { return e.isIntersecting; })) {
+            io.disconnect();
+            startLoad();
+          }
+        },
+        { root: null, rootMargin: "260px", threshold: 0.01 }
+      );
+      io.observe(section);
+    }
+    if (typeof requestIdleCallback === "function") {
+      requestIdleCallback(startLoad, { timeout: 5500 });
+    } else {
+      window.setTimeout(startLoad, 600);
+    }
   }
 
   function refresh() {
@@ -3438,8 +3502,23 @@ const Discovery = (function () {
   return { init };
 })();
 
+function scheduleDiscoveryInit() {
+  const run = () => {
+    try {
+      Discovery.init();
+    } catch (e) {
+      /* no-op */
+    }
+  };
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(run, { timeout: 4000 });
+  } else {
+    window.setTimeout(run, 2500);
+  }
+}
+
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => Discovery.init());
+  document.addEventListener("DOMContentLoaded", scheduleDiscoveryInit);
 } else {
-  Discovery.init();
+  scheduleDiscoveryInit();
 }

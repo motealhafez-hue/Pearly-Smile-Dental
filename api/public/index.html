@@ -21,13 +21,51 @@
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="canonical" href="index.html" />
     <title>Pearly Smile Dental Center | مركز بيرلي سمايل لطب الأسنان</title>
+    <!-- LCP: must match :root --ps-hero-slide-a in style.css (update both if URL changes) -->
+    <link
+      rel="preload"
+      as="image"
+      fetchpriority="high"
+      href="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&amp;fit=crop&amp;w=1920&amp;q=78"
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <script src="site-prefs-boot.js"></script>
+    <script>
+      (function () {
+        try {
+          var root = document.documentElement;
+          if (root.classList.contains("admin-root")) return;
+          var lang = localStorage.getItem("ps-lang");
+          if (lang === "ar" || lang === "en") {
+            root.lang = lang === "en" ? "en" : "ar";
+            root.dir = lang === "en" ? "ltr" : "rtl";
+          }
+          var theme = localStorage.getItem("ps-theme");
+          if (theme === "dark") root.classList.add("dark-theme");
+          else if (theme === "light") root.classList.remove("dark-theme");
+          var head = document.head;
+          if (head && !document.getElementById("ps-i18n-pending-style")) {
+            var st = document.createElement("style");
+            st.id = "ps-i18n-pending-style";
+            st.textContent = "html.ps-i18n-pending body{visibility:hidden!important}";
+            head.appendChild(st);
+          }
+          root.classList.add("ps-i18n-pending");
+        } catch (e) {}
+      })();
+    </script>
     <link
+      rel="preload"
       href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap"
+      />
+    </noscript>
     <link rel="stylesheet" href="style.css?v=i18n-dir-v1" />
     <script>
       (function () {
@@ -592,8 +630,9 @@
         window.__API_BASE__ = "http://127.0.0.1:8000";
       }
     </script>
-    <script src="site-data.js?v=i18n-dir-v1"></script>
-    <script src="script.js?v=i18n-dir-v1"></script>
+    <script defer src="site-prefs-boot.js"></script>
+    <script defer src="site-data.js?v=i18n-dir-v1"></script>
+    <script defer src="script.js?v=i18n-dir-v1"></script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
