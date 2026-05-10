@@ -1,0 +1,19 @@
+# Render (Python Web Service)
+#
+# Monorepo: use the render.yaml at the repository root — it sets rootDir: api
+# and runs these same commands from this folder.
+#
+# If this api/ folder is the whole Git repo, copy this file to the repo root
+# as render.yaml (or paste into the Render dashboard).
+
+services:
+  - type: web
+    name: psdc-api
+    runtime: python
+    plan: free
+    autoDeploy: true
+    buildCommand: pip install --no-cache-dir -r requirements.txt
+    startCommand: sh start.sh
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
