@@ -2169,6 +2169,27 @@ def blog_post_page(slug: str):
     return FileResponse(path)
 
 
+@app.get("/")
+@app.head("/")
+def index_page():
+    """
+    Explicit home route so `/` and Render's `HEAD /` checks work reliably.
+    (A catch-all `StaticFiles` mount at `/` does not always match the root path.)
+    """
+    path = ROOT_DIR / "index.html"
+    if not path.is_file():
+        return JSONResponse(
+            {
+                "service": "Pearly Smile Dental CMS API",
+                "health": "/health",
+                "docs": "/docs",
+                "openapi": "/openapi.json",
+                "cms_data": "/api/data",
+            }
+        )
+    return FileResponse(path)
+
+
 @app.get("/robots.txt")
 def robots_txt() -> PlainTextResponse:
     body = "\n".join(
