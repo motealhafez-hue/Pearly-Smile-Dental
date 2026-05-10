@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+# If you deploy on a domain, update Sitemap URL below.
+Sitemap: /sitemap.xml
+

@@ -1,10 +1,11 @@
 # Render (Python Web Service)
 #
-# Monorepo: use the render.yaml at the repository root — it sets rootDir: api
-# and runs these same commands from this folder.
+# Static site files must live in ./public/ next to main.py (index.html, style.css,
+# script.js, site-data.js, *.html, Pictures/, etc.). Sync from your full project
+# with:  powershell -File sync-public.ps1   (from this api/ folder)
 #
-# If this api/ folder is the whole Git repo, copy this file to the repo root
-# as render.yaml (or paste into the Render dashboard).
+# Monorepo: repo-root render.yaml can set rootDir: api (clone still contains ../ files;
+# for a repo that is ONLY this api/ folder, commit api/public/ as below).
 
 services:
   - type: web

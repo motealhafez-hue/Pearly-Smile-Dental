@@ -32,9 +32,18 @@ API_DIR = Path(__file__).resolve().parent
 def _resolve_site_root(api_dir: Path) -> Path:
     """
     Directory with index.html and static HTML/CSS/assets.
-    Supports: monorepo (site at repo root, api/ subfolder), flat repo (main.py next to index.html),
-    and Render overrides via SITE_ROOT / RENDER_SITE_ROOT / HTML_ROOT.
+
+    Order:
+    1) api/public/ — standalone api-only repo / Render (copy site into this folder).
+    2) api/www/ — alternate name.
+    3) SITE_ROOT / RENDER_SITE_ROOT / HTML_ROOT env.
+    4) Walk up from api/ for monorepo (repo root next to api/).
+    5) Same folder as main.py (flat layout).
     """
+    for sub in ("public", "www"):
+        p = api_dir / sub
+        if (p / "index.html").is_file():
+            return p
     for key in ("SITE_ROOT", "RENDER_SITE_ROOT", "HTML_ROOT"):
         raw = (os.environ.get(key) or "").strip()
         if not raw:
@@ -50,10 +59,13 @@ def _resolve_site_root(api_dir: Path) -> Path:
         if parent == cur:
             break
         cur = parent
-    return api_dir.parent
+    # Api-only Git repo: static site lives in api/public/ (see deploy notes in api/render.yaml).
+    return api_dir / "public"
 
 
 ROOT_DIR = _resolve_site_root(API_DIR)
+if ROOT_DIR == API_DIR / "public":
+    ROOT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _canonical_openai_env_key(name: str) -> str:
@@ -2213,6 +2225,7 @@ def index_page():
         return JSONResponse(
             {
                 "service": "Pearly Smile Dental CMS API",
+                "hint": "Api-only deploy: add index.html and assets under api/public/ then redeploy.",
                 "health": "/health",
                 "docs": "/docs",
                 "openapi": "/openapi.json",
