@@ -27,7 +27,33 @@ from pydantic import BaseModel, ConfigDict, Field
 from starlette.staticfiles import StaticFiles
 
 API_DIR = Path(__file__).resolve().parent
-ROOT_DIR = API_DIR.parent
+
+
+def _resolve_site_root(api_dir: Path) -> Path:
+    """
+    Directory with index.html and static HTML/CSS/assets.
+    Supports: monorepo (site at repo root, api/ subfolder), flat repo (main.py next to index.html),
+    and Render overrides via SITE_ROOT / RENDER_SITE_ROOT / HTML_ROOT.
+    """
+    for key in ("SITE_ROOT", "RENDER_SITE_ROOT", "HTML_ROOT"):
+        raw = (os.environ.get(key) or "").strip()
+        if not raw:
+            continue
+        p = Path(raw).expanduser().resolve()
+        if p.is_dir():
+            return p
+    cur = api_dir
+    for _ in range(10):
+        if (cur / "index.html").is_file():
+            return cur
+        parent = cur.parent
+        if parent == cur:
+            break
+        cur = parent
+    return api_dir.parent
+
+
+ROOT_DIR = _resolve_site_root(API_DIR)
 
 
 def _canonical_openai_env_key(name: str) -> str:
@@ -187,6 +213,12 @@ app = FastAPI(title="Pearly Smile CMS API")
 log = logging.getLogger("pearly")
 if not log.handlers:
     logging.basicConfig(level=logging.INFO)
+
+log.info(
+    "Site root %s (index.html %s)",
+    ROOT_DIR,
+    "ok" if (ROOT_DIR / "index.html").is_file() else "missing — push HTML to GitHub or set SITE_ROOT",
+)
 
 app.add_middleware(
     CORSMiddleware,
