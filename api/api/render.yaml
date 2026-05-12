@@ -1,0 +1,41 @@
+# Render (Python Web Service)
+#
+# Static site files must live in ./public/ next to main.py (index.html, style.css,
+# script.js, site-data.js, *.html, Pictures/, etc.). Sync from your full project
+# with:  powershell -File sync-public.ps1   (from this api/ folder)
+#
+# Monorepo: repo-root render.yaml can set rootDir: api (clone still contains ../ files;
+# for a repo that is ONLY this api/ folder, commit api/public/ as below).
+
+services:
+  - type: web
+    name: psdc-api
+    runtime: python
+    plan: free
+    autoDeploy: true
+    # Persist uploaded images (blog/media) across deploys.
+    disk:
+      name: psdc-uploads
+      mountPath: /var/data
+      sizeGB: 1
+    # Build api/public from repo root (avoid committing the huge generated folder).
+    buildCommand: sh sync-public.sh && pip install --no-cache-dir -r requirements.txt
+    startCommand: sh start.sh
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      # Redirect HTTP→HTTPS (uses X-Forwarded-Proto on Render).
+      - key: FORCE_HTTPS
+        value: "1"
+      # Store uploads on the persistent disk.
+      - key: UPLOADS_DIR
+        value: "/var/data/uploads"
+      # Public canonical origin for sitemap / JSON-LD absolute URLs (set in dashboard to https://your-domain).
+      # - key: SITE_BASE_URL
+      #   value: "https://example.com"
+      # Optional: comma-separated origins for browser CORS (default: same-origin only).
+      # - key: CORS_ALLOW_ORIGINS
+      #   value: "https://example.com,https://www.example.com"
+      # Optional: override default CSP (see SecurityHeadersMiddleware in main.py).
+      # - key: CONTENT_SECURITY_POLICY
+      #   value: "default-src 'self'; ..."
