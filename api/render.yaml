@@ -1,18 +1,16 @@
 # Render (Python Web Service)
 #
-# Static site files must live in ./public/ next to main.py (index.html, style.css,
-# script.js, site-data.js, *.html, Pictures/, etc.). Sync from your full project
-# with:  powershell -File sync-public.ps1   (from this api/ folder)
+# Monorepo: clone includes repo root (index.html, *.html, Pictures/, …) + api/.
+# main.py resolves the site root to the parent of api/ — no duplicate copy under api/public.
 #
-# Monorepo: repo-root render.yaml can set rootDir: api (clone still contains ../ files;
-# for a repo that is ONLY this api/ folder, commit api/public/ as below).
+# Blueprint: repo-root render.yaml (build = "cd api && pip …", start = "sh api/start.sh").
+# Standalone repo whose root IS this api/ folder: put the static site in api/public/ or
+# set SITE_ROOT; build = "pip install …"; start = "sh start.sh".
 
 services:
   - type: web
     name: psdc-api
     runtime: python
-    # When repo root is the monorepo (parent of api/), Render must run from this folder.
-    rootDir: api
     plan: free
     autoDeploy: true
     # Persist uploaded images (blog/media) across deploys.
@@ -20,9 +18,9 @@ services:
       name: psdc-uploads
       mountPath: /var/data
       sizeGB: 1
-    # Build api/public from repo root (avoid committing the huge generated folder).
-    buildCommand: sh sync-public.sh && pip install --no-cache-dir -r requirements.txt
-    startCommand: python -m uvicorn main:app --host 0.0.0.0 --port $PORT
+    # From monorepo clone root (parent of api/).
+    buildCommand: cd api && pip install --no-cache-dir -r requirements.txt
+    startCommand: sh api/start.sh
     envVars:
       - key: PYTHONUNBUFFERED
         value: "1"

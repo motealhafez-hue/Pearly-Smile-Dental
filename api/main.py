@@ -38,17 +38,12 @@ def _resolve_site_root(api_dir: Path) -> Path:
     """
     Directory with index.html and static HTML/CSS/assets.
 
-    Order:
-    1) api/public/ — standalone api-only repo / Render (copy site into this folder).
-    2) api/www/ — alternate name.
-    3) SITE_ROOT / RENDER_SITE_ROOT / HTML_ROOT env.
-    4) Walk up from api/ for monorepo (repo root next to api/).
-    5) Same folder as main.py (flat layout).
+    Order (monorepo-first — Render can clone the full repo; no sync copy required):
+    1) SITE_ROOT / RENDER_SITE_ROOT / HTML_ROOT env.
+    2) Walk up from api/ for index.html (repo root next to api/).
+    3) api/public/ or api/www/ if they contain index.html (optional api-only layout).
+    4) Fallback api/public/ (created empty if needed).
     """
-    for sub in ("public", "www"):
-        p = api_dir / sub
-        if (p / "index.html").is_file():
-            return p
     for key in ("SITE_ROOT", "RENDER_SITE_ROOT", "HTML_ROOT"):
         raw = (os.environ.get(key) or "").strip()
         if not raw:
@@ -64,7 +59,10 @@ def _resolve_site_root(api_dir: Path) -> Path:
         if parent == cur:
             break
         cur = parent
-    # Api-only Git repo: static site lives in api/public/ (see deploy notes in api/render.yaml).
+    for sub in ("public", "www"):
+        p = api_dir / sub
+        if (p / "index.html").is_file():
+            return p
     return api_dir / "public"
 
 
@@ -185,7 +183,7 @@ BOOKINGS_PATH = API_DIR / "bookings.json"
 SCHEDULE_PATH = API_DIR / "schedule.json"
 EVENTS_PATH = API_DIR / "events.json"
 BLOG_PATH = API_DIR / "blog.json"
-# Uploads must not live under ROOT_DIR (api/public) because sync-public wipes that folder.
+# Uploads must not live under ROOT_DIR when ROOT_DIR is the generated api/public/ tree.
 # In production, point UPLOADS_DIR to a persistent disk mount (Render Persistent Disk).
 _uploads_env = (os.environ.get("UPLOADS_DIR") or "").strip()
 UPLOADS_DIR = Path(_uploads_env).expanduser().resolve() if _uploads_env else (API_DIR / "uploads")
